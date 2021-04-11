@@ -3,7 +3,7 @@ library(shinythemes)
 library(RColorBrewer)
 
 shinyUI(
-  navbarPage("fastsimcoal web app 1.1.0",
+  navbarPage("fastsimcoal web app 1.1.1",
              
   ##### DOCUMENTATION TAB ------------------------------------------------------
   

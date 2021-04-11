@@ -1,9 +1,3 @@
-###### fastsimcoal shiny app
-## v. 1.0.2 - 07-12-2018
-## This app aims at helping fastsimcoal users
-## Shiny app by Alexandre Gouy
-## Based on R scripts written by Laurent Excoffier, Vitor Sousa and Alexandre Gouy
-
 shinyServer(function(input, output) {
    
   inputFiles <- reactive({
@@ -266,13 +260,14 @@ shinyServer(function(input, output) {
   output$plot2DSFS <- renderPlot({
     
     f.names <- inputFiles()
-    
+
     if(is.null(f.names)) return(NULL)
     if(!is.na(f.names$jsfs[1])) {
       plot2DSFS(
         input$jsfs,
         freq.cutoff = 10 ^ input$freqCutoff,
-        coul = input$jsfscolor
+        coul = input$jsfscolor,
+        input = input
       )
     } else {
       return(NULL)
@@ -689,20 +684,27 @@ read.input <- function(input.file) {
 
 
 
-plot2DSFS <- function(input.file, freq.text = TRUE, freq.cutoff = 0.001, coul = "Red") {
+plot2DSFS <- function(input.file, freq.text = TRUE, freq.cutoff = 0.001, coul = "Red", input) {
   
   ext <- substr(
     input.file, (nchar(input.file) + 1) - 3, nchar(input.file)
   )
-  
   if(ext == "obs") {
-    joint <- read.delim(input.file, sep = "\t", header=TRUE, as.is=TRUE, skip = 1)
+    # joint <- read.delim(input.file, sep = "\t", header=TRUE, as.is=TRUE, skip = 1)
+    joint <- read.table(
+      unz(input$mainfile$datapath, input.file),
+      skip = 1
+    )
     rownames(joint) <- joint[, 1]
     joint.sfs <- as.matrix(joint[, -1])
     joint.sfs[1,1] <- 0
     joint.sfs <- joint.sfs/sum(joint.sfs)
   } else {
-    joint <- read.delim(input.file, sep = "\t", header=TRUE, as.is=TRUE, skip = 0)
+    # joint <- read.delim(input.file, sep = "\t", header=TRUE, as.is=TRUE, skip = 0)
+    joint <- read.table(
+      unz(input$mainfile$datapath, input.file),
+      skip = 0
+    )
     rownames(joint) <- joint[, 1]
     joint.sfs <- as.matrix(joint[, -1])
   }
@@ -886,10 +888,17 @@ plotParFile <- function(
   par(mar = c(5+3, 5, 5, 5), xpd = FALSE)
   
   ##### READ PAR FILE ------------------------------------------------------------
-  parFile <- scan(
-    unz(mainfile$datapath, input.file), what = character(0), sep = "\n",
-    strip.white = TRUE, quiet = TRUE
-  )
+  if(length(grep(".zip", mainfile$datapath)) > 0) {
+    parFile <- scan(
+      unz(mainfile$datapath, input.file), what = character(0), sep = "\n",
+      strip.white = TRUE, quiet = TRUE
+    )
+  } else {
+    parFile <- readLines(
+      mainfile$datapath
+    )
+  }
+
   ids <- grep("^//", parFile)
 
   # get population sizes and number of samples
